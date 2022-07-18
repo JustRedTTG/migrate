@@ -173,7 +173,6 @@ for i in selection:
     config = os.path.join(git_folder, projects[i],'.git','config')
     mtime = os.path.getmtime(config)
 
-    print(f'Running: github open "{new_folder}"')
     os.system(f'github open "{new_folder}"')
 
     new_mtime = mtime
