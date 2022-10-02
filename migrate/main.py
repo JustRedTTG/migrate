@@ -4,7 +4,8 @@ from save_load import *
 def ask(message):
     print(message,end=" [Y/N] : ")
     result = input()
-    if result in "Yy": return True
+    if len(result) < 1: return False
+    elif result in "Yy": return True
     elif result in "Nn": return False
     else:
         print("Unknown character, defaulting to NO")
@@ -62,6 +63,7 @@ projects_git = []
 ignore = []
 imposter = []
 valid = []
+duplicate_enable = False
 
 # List both local and git projects
 for item in os.listdir(local_folder):
@@ -95,12 +97,19 @@ print(f"{len(valid)}/{len(projects_git)} projects are valid git projects.\n")
 for item in projects_git:
     if not item in valid: print(item)
 
-if not ask("Continue to select?"): exit()
+if not ask("Continue to selecting non duplicates?"):
+    print()
+    if ask("Show Duplicates?"):
+        duplicate_enable = True
+    else: exit()
 
 i = 0
 while i < len(projects):
     if projects[i] in projects_git: del projects[i]
     else: i += 1
+
+if duplicate_enable:
+    projects = ignore
 
 
 clear()
@@ -116,12 +125,16 @@ if migrate:
     if ask('Load it?'):
         for select in migrate[0]:
             if select in projects: selection.add(projects.index(select))
-        os.remove('migrate')
+    os.remove('migrate')
+
 while True:
     print(f'[0] - All - {check if len(selection) == len(projects) else no_check}')
 
     for i in range(len(projects)):
-        print(f'[{i+1}] - {projects[i]} - {check if i in selection else no_check}')
+        if projects[i] in ignore:
+            print(f'[{i+1}] - ❖ {projects[i]} - {check if i in selection else no_check}')
+        else:
+            print(f'[{i+1}] - ◘ {projects[i]} - {check if i in selection else no_check}')
     print("\nType END to finish the selection.\n"
           "Type the index number again to deselect\n",
           end="Select: ")
@@ -157,14 +170,40 @@ for i in selection:
     old_folder = os.path.join(local_folder, projects[i])
     new_folder = os.path.join(git_folder, projects[i])
 
-    if os.path.exists(new_folder): shutil.rmtree(new_folder)
-
-    shutil.copytree(old_folder, new_folder)
-    git(new_folder)
-    shutil.copy(gitignore,os.path.join(new_folder, '.gitignore'))
-    print(f"migrate {projects[i]} : {old_folder} => {new_folder}")
+    if not duplicate_enable:
+        if os.path.exists(new_folder): shutil.rmtree(new_folder)
+        shutil.copytree(old_folder, new_folder)
+        git(new_folder)
+        shutil.copy(gitignore,os.path.join(new_folder, '.gitignore'))
+    if duplicate_enable:
+        files, folders = [], []
+        for data in os.listdir(old_folder):
+            if os.path.isfile(os.path.join(old_folder, data)):
+                files.append(data)
+            elif data != '.git':
+                folders.append(data)
+        for file in files:
+            shutil.copy(os.path.join(old_folder, file), new_folder)
+        for folder in folders:
+            if os.path.exists(os.path.join(new_folder, folder)): shutil.rmtree(os.path.join(new_folder, folder))
+            shutil.copytree(os.path.join(old_folder, folder), os.path.join(new_folder, folder))
+        print(f"duplicate {projects[i]}")
+    else:
+        print(f"migrate {projects[i]} : {old_folder} => {new_folder}")
 
 print()
+
+if duplicate_enable or ask("Delete local?"):
+    for i in selection:
+        old_folder = os.path.join(local_folder, projects[i])
+        shutil.rmtree(old_folder)
+        print(f"Delete local \"{projects[i]}\" !")
+
+print()
+
+if duplicate_enable:
+    input("Press enter to exit")
+    exit()
 
 if not ask("Use github?"): exit()
 
