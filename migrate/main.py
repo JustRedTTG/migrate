@@ -39,15 +39,27 @@ else: print("Confirmed the presence of git!")
 
 data = load('save')
 
+def check_pref(local_folder, git_folder, gitignore):
+    while not os.path.exists(local_folder):
+        local_folder = input("Local folder (invalid!): ")
+    while not os.path.exists(git_folder):
+        git_folder = input("Git folder (invalid!): ")
+    while not os.path.exists(gitignore):
+        gitignore = input("Git ignore (invalid!): ")
+    return local_folder, git_folder, gitignore
+
 if data:
     print("Importing saved preferences.")
     local_folder = data[0]
     git_folder = data[1]
     gitignore = data[2]
+    local_folder, git_folder, gitignore = check_pref(local_folder, git_folder, gitignore)
+    save('save',local_folder, git_folder,gitignore)
 else:
     local_folder = input("Local folder: ")
     git_folder = input("Git folder: ")
     gitignore = input("Git ignore: ")
+    local_folder, git_folder, gitignore = check_pref(local_folder, git_folder, gitignore)
     if ask("Save?"): save('save',local_folder, git_folder,gitignore)
 
 print(f"\nTransferring all projects from: {local_folder}\n"
